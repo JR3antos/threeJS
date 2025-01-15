@@ -14,7 +14,7 @@ const controls = new OrbitControls( camera, renderer.domElement );
 
 const boxGeo = new THREE.BoxGeometry(1,1,1);
 const boxMat = new THREE.MeshStandardMaterial({
-  color: 0x0000ff,
+  color: 0xff00ff,
 });
 const box = new THREE.Mesh(boxGeo, boxMat);
 scene.add(box);
