@@ -1,6 +1,8 @@
 import * as THREE from "three";
 import { GLTFLoader } from 'jsm/loaders/GLTFLoader.js';
 import { OrbitControls } from 'jsm/controls/OrbitControls.js';
+import { RGBELoader } from 'jsm/loaders/RGBELoader.js';
+
 
 const scene = new THREE.Scene();
 const w = window.innerWidth; // Reduced resolution
@@ -8,9 +10,11 @@ const h = window.innerHeight;
 const camera = new THREE.PerspectiveCamera(75, w / h, 0.1, 1000);
 camera.position.z = 2;
 scene.add(camera);
-const renderer = new THREE.WebGLRenderer({ antialias: false }); // Disabled AA for performance
+const renderer = new THREE.WebGLRenderer({ antialias: true }); 
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(w, h);
 renderer.setClearColor(0xffffff);
+renderer.outputEncoding = THREE.sRGBEncoding;
 document.body.appendChild(renderer.domElement);
 
 const controls = new OrbitControls(camera, renderer.domElement);
@@ -27,8 +31,11 @@ loader.load('./Model.glb', (gltf) => {
     }
 });
 
-const hemiLight = new THREE.HemisphereLight(0xffffff, 0x00000f);
-scene.add(hemiLight);
+const hdrloader = new RGBELoader();
+hdrloader.load('Hall.hdr', function (texture) {
+    texture.mapping = THREE.EquirectangularReflectionMapping;
+    scene.environment = texture;
+});
 
 const slider1 = createSlider(20);
 const slider2 = createSlider(40);
