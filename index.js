@@ -1,80 +1,52 @@
-import * as THREE from "three";
-import { GLTFLoader } from 'jsm/loaders/GLTFLoader.js';
+import * as THREE from 'three';
 import { OrbitControls } from 'jsm/controls/OrbitControls.js';
-import { RGBELoader } from 'jsm/loaders/RGBELoader.js';
-
+import { GUI } from 'lil-gui';
 
 const scene = new THREE.Scene();
-const w = window.innerWidth; // Reduced resolution
-const h = window.innerHeight;
-const camera = new THREE.PerspectiveCamera(75, w / h, 0.1, 1000);
-camera.position.z = 2;
-scene.add(camera);
-const renderer = new THREE.WebGLRenderer({ antialias: true }); 
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.setSize(w, h);
-renderer.setClearColor(0xffffff);
-renderer.outputEncoding = THREE.sRGBEncoding;
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+const renderer = new THREE.WebGLRenderer();
+renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
+
+const geometry = new THREE.BoxGeometry(1, 1, 1);
+const material = new THREE.MeshPhongMaterial({ color: 0xff0000 });
+const cube = new THREE.Mesh(geometry, material);
+scene.add(cube);
+
+const skyColor = 0xb1e1ff; // light blue
+const groundColor = 0xb97a20; // brownish orange
+const intensity = 1;
+const light = new THREE.HemisphereLight(skyColor, groundColor, intensity);
+scene.add(light);
+
+const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+directionalLight.position.set(5, 5, 5);
+directionalLight.castShadow = true;  // Habilita sombras
+scene.add(directionalLight);
+
+const cubeSettings = {
+    color: '#ff0000',  // Color inicial en formato hexadecimal
+};
+
+const gui = new GUI();
+gui.addColor(light, 'color').name('Sky Color');
+gui.addColor(cubeSettings, 'color').name('Cube Color').onChange((value) => {
+    cube.material.color.set(value);
+});
+gui.add(light, 'intensity', 0, 5, 0.01);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
-const loader = new GLTFLoader();
-let morphMesh;
-loader.load('./Model.glb', (gltf) => {
-    morphMesh = gltf.scene.getObjectByProperty('type', 'Mesh');
-    if (morphMesh && morphMesh.morphTargetInfluences) {
-        scene.add(morphMesh);
-    } else {
-        console.error('No morph targets found!');
-    }
-});
+camera.position.z = 5;
 
-const hdrloader = new RGBELoader();
-hdrloader.load('Hall.hdr', function (texture) {
-    texture.mapping = THREE.EquirectangularReflectionMapping;
-    scene.environment = texture;
-});
-
-const slider1 = createSlider(20);
-const slider2 = createSlider(40);
-const slider3 = createSlider(60);
-
-let lastSliderValues = [0, 0, 0];
 function animate() {
-    requestAnimationFrame(animate);
-    const newValues = [
-        parseFloat(slider1.value),
-        parseFloat(slider2.value),
-        parseFloat(slider3.value),
-    ];
-
-    if (newValues[0] !== lastSliderValues[0] || newValues[1] !== lastSliderValues[1] || newValues[2] !== lastSliderValues[2]) {
-        if (morphMesh && morphMesh.morphTargetInfluences) {
-            morphMesh.morphTargetInfluences[0] = newValues[0];
-            morphMesh.morphTargetInfluences[1] = newValues[1];
-            morphMesh.morphTargetInfluences[2] = newValues[2];
-        }
-        lastSliderValues = newValues;
-    }
-
-    renderer.render(scene, camera);
-    controls.update();
+  requestAnimationFrame(animate);
+  cube.rotation.x += 0.01;
+  cube.rotation.y += 0.01;
+  controls.update();
+  renderer.render(scene, camera);
 }
-renderer.setAnimationLoop(animate);
 
-function createSlider(bottom) {
-    const slider = document.createElement('input');
-    slider.type = 'range';
-    slider.min = 0;
-    slider.max = 1;
-    slider.step = 0.01;
-    slider.value = 0;
-    slider.style.position = 'absolute';
-    slider.style.bottom = `${bottom}px`;
-    slider.style.left = '20px';
-    slider.style.width = '200px';
-    document.body.appendChild(slider);
-    return slider;
-}
+animate();
